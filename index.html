@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+< lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ludo Arena</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; font-family: Arial, sans-serif; color: #fff; }
+  .screen {
+    position: absolute; inset: 0; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 20px; overflow-y: auto;
+  }
+  .screen.active { display: flex; }
+
+  #splash { background: radial-gradient(circle, #0057c8, #001a40); }
+  #splash h1 { font-size: 40px; letter-spacing: 3px; }
+
+  #loading { background: #0b3d91; }
+  #loading h1 { font-size: 44px; margin-bottom: 30px; color: #ffd700; }
+  .bar { width: 70%; height: 14px; background: #06255a; border-radius: 10px; overflow: hidden; }
+  #fill { height: 100%; width: 0%; background: #ffd700; transition: width 2s linear; }
+
+  #login { background: linear-gradient(#0b3d91, #001a40); }
+  #login .logo { font-size: 38px; font-weight: bold; color: #ffd700; margin-bottom: 6px; }
+  #login .sub { font-size: 20px; margin-bottom: 24px; }
+  .card { width: 100%; max-width: 380px; background: #06255a; border: 3px solid #ffd700; border-radius: 16px; padding: 18px; }
+  .perks { display: flex; gap: 8px; margin-bottom: 16px; }
+  .perk { flex: 1; background: #0b3d91; border-radius: 10px; padding: 8px 4px; font-size: 13px; }
+  .btn { display: block; width: 100%; border: none; border-radius: 10px; padding: 15px; font-size: 18px; font-weight: bold; margin-top: 12px; }
+  .btn-google { background: #fff; color: #444; }
+  .btn-guest { background: #1565c0; color: #fff; border: 3px solid #ffd700; max-width: 340px; margin-top: 20px; }
+  .or { font-size: 24px; font-weight: bold; color: #ffd700; margin-top: 16px; }
+  .note { font-size: 12px; margin-top: 18px; opacity: 0.8; max-width: 320px; }
+
+  #home { background: linear-gradient(#0b3d91, #001a40); justify-content: flex-start; padding: 0; }
+  .topbar { width: 100%; display: flex; align-items: center; gap: 10px; padding: 14px; background: #06255a; border-bottom: 3px solid #ffd700; }
+  .avatar { width: 46px; height: 46px; border-radius: 50%; background: #ffd700; color: #06255a; font-weight: bold; font-size: 22px; display: flex; align-items: center; justify-content: center; }
+  .pname { flex: 1; text-align: left; font-weight: bold; font-size: 16px; }
+  .chip { background: #0b3d91; border-radius: 20px; padding: 6px 12px; font-size: 14px; font-weight: bold; }
+  .logout { background: none; border: 1px solid #fff; color: #fff; border-radius: 8px; padding: 5px 8px; font-size: 12px; }
+  .hero { margin-top: 40px; font-size: 44px; font-weight: bold; color: #ffd700; letter-spacing: 2px; }
+  .tag { margin-top: 4px; opacity: 0.85; }
+  .dice { font-size: 70px; margin: 22px 0 10px; }
+  .menu { width: 100%; max-width: 360px; padding: 0 20px; margin-top: 20px; }
+  .big { display: flex; align-items: center; gap: 14px; width: 100%; border-radius: 16px; border: 3px solid #ffd700; padding: 18px; margin-top: 18px; font-size: 22px; font-weight: bold; color: #fff; text-align: left; }
+  .big small { display: block; font-size: 13px; font-weight: normal; opacity: 0.9; }
+  .big .ico { font-size: 38px; }
+  .b-multi { background: linear-gradient(#1e88e5, #0d47a1); }
+  .b-comp { background: linear-gradient(#43a047, #1b5e20); }
+
+  .panel-screen { background: linear-gradient(#0b3d91, #001a40); }
+  .title { font-size: 28px; font-weight: bold; color: #ffd700; margin-bottom: 6px; }
+  .modeLabel { font-size: 14px; opacity: 0.85; margin-bottom: 18px; }
+  .panel { width: 100%; max-width: 380px; background: #06255a; border: 3px solid #ffd700; border-radius: 16px; padding: 14px; }
+
+  .opt { display: flex; align-items: center; gap: 14px; width: 100%; background: #0b3d91; border: 3px solid #ffd700; border-radius: 14px; padding: 14px; margin: 8px 0; color: #fff; text-align: left; }
+  .opt .radio { width: 28px; height: 28px; border-radius: 50%; border: 3px solid #ffd700; background: #06255a; flex-shrink: 0; }
+  .opt.sel .radio { background: #ffd700; box-shadow: inset 0 0 0 5px #06255a; }
+  .opt .t { font-size: 20px; font-weight: bold; }
+  .opt .d { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+  .opt.sel { background: #1565c0; }
+
+  .gold { background: linear-gradient(#1e88e5, #0d47a1); color: #fff; border: 3px solid #ffd700; border-radius: 14px; padding: 14px 40px; font-size: 20px; font-weight: bold; margin-top: 18px; }
+  .ghost { background: none; color: #fff; border: 1px solid #fff; border-radius: 10px; padding: 8px 20px; font-size: 14px; margin-top: 12px; }
+
+  .counts { display: flex; gap: 10px; justify-content: center; margin-bottom: 14px; }
+  .cnt { width: 70px; padding: 12px 0; border-radius: 12px; border: 3px solid #ffd700; background: #0b3d91; color: #fff; font-size: 20px; font-weight: bold; }
+  .cnt.sel { background: #ffd700; color: #06255a; }
+  .cnt.dis { opacity: 0.35; }
+  .prow { display: flex; align-items: center; gap: 10px; background: #0b3d91; border-radius: 12px; padding: 10px; margin: 8px 0; }
+  .pin { width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #fff; flex-shrink: 0; }
+  .pin.blue { background: #1e88e5; } .pin.red { background: #e53935; }
+  .pin.green { background: #43a047; } .pin.yellow { background: #fdd835; }
+  .pin-wrap { width: 34px; display: flex; justify-content: center; }
+  .pinput { flex: 1; min-width: 0; padding: 10px; border-radius: 8px; border: 2px dashed #b71c1c; background: #fff; color: #000; font-size: 16px; font-weight: bold; }
+  .pinput:disabled { background: #cfd8dc; color: #37474f; border-color: #607d8b; }
+  .tag-ai { font-size: 18px; }
+  .teamnote { font-size: 12px; opacity: 0.85; margin-top: 8px; }
+
+  /* BOARD */
+  #board { justify-content: flex-start; padding: 10px 8px; }
+  #boardTitle { font-size: 14px; opacity: 0.9; margin: 4px 0 8px; }
+  #cv { border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.6); background: #fff; }
+  #strip { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; }
+  .pchip { display: flex; align-items: center; gap: 6px; background: #06255a; border: 2px solid #ffd700; border-radius: 20px; padding: 5px 12px; font-size: 14px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; }
+  .row-btns { display: flex; gap: 10px; margin-top: 10px; }
+  .row-btns button { margin-top: 0; padding: 10px 18px; font-size: 16px; }
+</style>
+</head>
+<>
+
+<div id="splash" class="screen active"><h1>ARENA GAMES</h1></div>
+
+<div id="loading" class="screen">
+  <h1>LUDO ARENA</h1>
+  <div class="bar"><div id="fill"></div></div>
+</div>
+
+<div id="login" class="screen">
+  <div class="logo">LUDO ARENA</div>
+  <div class="sub">LOGIN TO CONTINUE</div>
+  <div class="card">
+    <div class="perks">
+      <div class="perk">☁️ Save Data</div>
+      <div class="perk">📱 Change Device</div>
+      <div class="perk">💎 +100</div>
+    </div>
+    <button class="btn btn-google" onclick="googleLogin()">G &nbsp; Sign in with Google</button>
+  </div>
+  <div class="or">OR</div>
+  <button class="btn btn-guest" onclick="guestLogin()">Play as Guest</button>
+  <div class="note">By continuing, I agree to the Privacy Policy.</div>
+</div>
+
+<div id="home" class="screen">
+  <div class="topbar">
+    <div class="avatar" id="avatar">G</div>
+    <div class="pname" id="pname">Guest</div>
+    <div class="chip">💎 50</div>
+    <div class="chip">🪙 1,000</div>
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
+  <div class="hero">LUDO ARENA</div>
+  <div class="tag">Roll. Move. Win.</div>
+  <div class="dice">🎲</div>
+  <div class="menu">
+    <button class="big b-multi" onclick="openSelect('multiplayer')">
+      <span class="ico">🌐</span>
+      <span>MULTIPLAYER<small>Dosre players ke saath</small></span>
+    </button>
+    <button class="big b-comp" onclick="openSelect('computer')">
+      <span class="ico">🤖</span>
+      <span>COMPUTER<small>Computer ke against</small></span>
+    </button>
+  </div>
+</div>
+
+<div id="select" class="screen panel-screen">
+  <div class="title">SELECT GAME</div>
+  <div class="modeLabel" id="modeLabel"></div>
+  <div class="panel">
+    <button class="opt sel" id="opt-classic" onclick="pickType('classic')">
+      <span class="radio"></span>
+      <span><div class="t">Classic</div><div class="d">Sabhi 4 token ghar pahunchane hain</div></span>
+    </button>
+    <button class="opt" id="opt-teamup" onclick="pickType('teamup')">
+      <span class="radio"></span>
+      <span><div class="t">Team Up</div><div class="d">2 vs 2 (4 players chahiye)</div></span>
+    </button>
+    <button class="opt" id="opt-quick" onclick="pickType('quick')">
+      <span class="radio"></span>
+      <span><div class="t">Quick</div><div class="d">Chhota game, 1 token ghar pahunchao</div></span>
+    </button>
+  </div>
+  <button class="gold" onclick="goPlayers()">Next</button>
+  <button class="ghost" onclick="show('home')">← Back</button>
+</div>
+
+<div id="players" class="screen panel-screen">
+  <div class="title">CHOOSE COLOR AND NAME</div>
+  <div class="modeLabel" id="playersLabel"></div>
+  <div class="panel">
+    <div class="counts">
+      <button class="cnt" id="cnt-2" onclick="pickCount(2)">2P</button>
+      <button class="cnt" id="cnt-3" onclick="pickCount(3)">3P</button>
+      <button class="cnt" id="cnt-4" onclick="pickCount(4)">4P</button>
+    </div>
+    <div id="prows"></div>
+    <div class="teamnote" id="teamnote"></div>
+  </div>
+  <button class="gold" onclick="startGame()">Play</button>
+  <button class="ghost" onclick="show('select')">← Back</button>
+</div>
+
+<!-- BOARD -->
+<div id="board" class="screen panel-screen">
+  <div id="boardTitle"></div>
+  <canvas id="cv"></canvas>
+  <div id="strip"></div>
+  <div class="row-btns">
+    <button class="ghost" onclick="testPath()">▶ Test Path</button>
+    <button class="ghost" onclick="exitGame()">✕ Exit</button>
+  </div>
+</div>
+
+<script>
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
+    document.getElementById(id).classList.add('active');
+  }
+
+  /* ---------- user save ---------- */
+  function saveUser(name) { try { localStorage.setItem('ludoUser', name); } catch (e) {} }
+  function getUser() { try { return localStorage.getItem('ludoUser'); } catch (e) { return null; } }
+  function clearUser() { try { localStorage.removeItem('ludoUser'); } catch (e) {} }
+
+  var myName = 'Player 1';
+
+  function goHome(name) {
+    myName = name;
+    document.getElementById('pname').textContent = name;
+    document.getElementById('avatar').textContent = name.charAt(0).toUpperCase();
+    show('home');
+  }
+  function guestLogin() {
+    var name = 'Guest' + Math.floor(1000 + Math.random() * 9000);
+    saveUser(name);
+    goHome(name);
+  }
+  function googleLogin() { alert('Google login baad mein Firebase ke saath jodenge.'); }
+  function logout() { clearUser(); show('login'); }
+
+  /* ---------- game config ---------- */
+  var cfg = { mode: 'computer', type: 'classic', count: 2 };
+  var COLORS_BY_COUNT = {
+    2: ['blue', 'green'],
+    3: ['blue', 'red', 'green'],
+    4: ['blue', 'red', 'green', 'yellow']
+  };
+  var TYPE_NAMES = { classic: 'Classic', teamup: 'Team Up', quick: 'Quick' };
+
+  function modeText() { return cfg.mode === 'computer' ? 'Computer Mode' : 'Multiplayer Mode'; }
+
+  function openSelect(mode) {
+    cfg.mode = mode;
+    document.getElementById('modeLabel').textContent = modeText();
+    pickType(cfg.type);
+    show('select');
+  }
+
+  function pickType(type) {
+    cfg.type = type;
+    ['classic', 'teamup', 'quick'].forEach(function (t) {
+      document.getElementById('opt-' + t).classList.toggle('sel', t === type);
+    });
+  }
+
+  function goPlayers() {
+    if (cfg.type === 'teamup') cfg.count = 4;
+    document.getElementById('playersLabel').textContent = modeText() + ' • ' + TYPE_NAMES[cfg.type];
+    renderPlayers();
+    show('players');
+  }
+
+  function pickCount(n) {
+    if (cfg.type === 'teamup') return;
+    cfg.count = n;
+    renderPlayers();
+  }
+
+  function renderPlayers() {
+    [2, 3, 4].forEach(function (n) {
+      var b = document.getElementById('cnt-' + n);
+      b.classList.toggle('sel', n === cfg.count);
+      b.classList.toggle('dis', cfg.type === 'teamup' && n !== 4);
+    });
+    var colors = COLORS_BY_COUNT[cfg.count];
+    var html = '';
+    for (var i = 0; i < colors.length; i++) {
+      var isAI = cfg.mode === 'computer' && i > 0;
+      var defName = isAI ? 'Computer ' + i : (i === 0 ? myName : 'Player ' + (i + 1));
+      html += '<div class="prow">' +
+        '<div class="pin-wrap"><div class="pin ' + colors[i] + '"></div></div>' +
+        '<input class="pinput" id="pn' + i + '" maxlength="12" value="' + defName + '"' + (isAI ? ' disabled' : '') + '>' +
+        '<span class="tag-ai">' + (isAI ? '🤖' : '🎲') + '</span>' +
+        '</div>';
+    }
+    document.getElementById('prows').innerHTML = html;
+    document.getElementById('teamnote').textContent =
+      cfg.type === 'teamup' ? 'Team Up: Blue + Green ek team, Red + Yellow dusri team' : '';
+  }
+
+  /* =========================================================
+     BOARD (Step 5)
+     Grid: 15 x 15 cells. Cell (c, r) = column c, row r.
+     ========================================================= */
+  var COL = { red: '#e53935', green: '#43a047', yellow: '#fdd835', blue: '#1e88e5' };
+  var BASE = { red: [0, 0], green: [9, 0], yellow: [9, 9], blue: [0, 9] };
+  var START = { red: 0, green: 13, yellow: 26, blue: 39 };
+  var STARS = [8, 21, 34, 47];
+
+  // 52 cells of the main track, clockwise, index 0 = red start
+  var TRACK = [
+    [1,6],[2,6],[3,6],[4,6],[5,6],
+    [6,5],[6,4],[6,3],[6,2],[6,1],[6,0],
+    [7,0],[8,0],
+    [8,1],[8,2],[8,3],[8,4],[8,5],
+    [9,6],[10,6],[11,6],[12,6],[13,6],[14,6],
+    [14,7],[14,8],
+    [13,8],[12,8],[11,8],[10,8],[9,8],
+    [8,9],[8,10],[8,11],[8,12],[8,13],[8,14],
+    [7,14],[6,14],
+    [6,13],[6,12],[6,11],[6,10],[6,9],
+    [5,8],[4,8],[3,8],[2,8],[1,8],[0,8],
+    [0,7],[0,6]
+  ];
+
+  // 5 home-lane cells for each color
+  var LANE = {
+    red:    [[1,7],[2,7],[3,7],[4,7],[5,7]],
+    green:  [[7,1],[7,2],[7,3],[7,4],[7,5]],
+    yellow: [[13,7],[12,7],[11,7],[10,7],[9,7]],
+    blue:   [[7,13],[7,12],[7,11],[7,10],[7,9]]
+  };
+
+  var game = null;
+  var cv, ctx, S, cell;
+  var demo = null;
+
+  /* Token progress p:
+     -1      = ghar (yard)
+     0..50   = main track (51 cells)
+     51..55  = home lane
+     56      = finished (center)                                  */
+  function tokenXY(color, p, n) {
+    if (p < 0) {
+      var b = BASE[color];
+      var sx = (n % 2 === 0) ? 2 : 4;
+      var sy = (n < 2) ? 2 : 4;
+      return [b[0] + sx, b[1] + sy];
+    }
+    if (p <= 50) {
+      var c = TRACK[(START[color] + p) % 52];
+      return [c[0] + 0.5, c[1] + 0.5];
+    }
+    if (p <= 55) {
+      var l = LANE[color][p - 51];
+      return [l[0] + 0.5, l[1] + 0.5];
+    }
+    var off = { red: [6.9, 7.5], green: [7.5, 6.9], yellow: [8.1, 7.5], blue: [7.5, 8.1] };
+    return off[color];
+  }
+
+  function setupBoard() {
+    cv = document.getElementById('cv');
+    var size = Math.min(window.innerWidth - 16, window.innerHeight - 230, 560);
+    size = Math.max(size, 240);
+    S = size;
+    var dpr = window.devicePixelRatio || 1;
+    cv.style.width = size + 'px';
+    cv.style.height = size + 'px';
+    cv.width = Math.round(size * dpr);
+    cv.height = Math.round(size * dpr);
+    ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cell = size / 15;
+  }
+
+  function rect(c, r, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(c * cell, r * cell, cell, cell);
+  }
+  function outline(c, r) {
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#9e9e9e';
+    ctx.strokeRect(c * cell, r * cell, cell, cell);
+  }
+  function label(txt, c, r, color, sizeMul) {
+    ctx.font = 'bold ' + Math.round(cell * sizeMul) + 'px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    ctx.fillText(txt, (c + 0.5) * cell, (r + 0.55) * cell);
+  }
+
+  function drawToken(x, y, color) {
+    var cx = x * cell, cy = y * cell, rad = cell * 0.34;
+    ctx.beginPath();
+    ctx.arc(cx, cy + rad * 0.18, rad, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+    ctx.fillStyle = COL[color];
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx - rad * 0.3, cy - rad * 0.3, rad * 0.25, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fill();
+  }
+
+  function drawBoard() {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, S, S);
+
+    // 4 homes
+    Object.keys(BASE).forEach(function (color) {
+      var o = BASE[color];
+      ctx.fillStyle = COL[color];
+      ctx.fillRect(o[0] * cell, o[1] * cell, 6 * cell, 6 * cell);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect((o[0] + 1) * cell, (o[1] + 1) * cell, 4 * cell, 4 * cell);
+      // 4 spots
+      [[2,2],[4,2],[2,4],[4,4]].forEach(function (s) {
+        ctx.beginPath();
+        ctx.arc((o[0] + s[0]) * cell, (o[1] + s[1]) * cell, cell * 0.42, 0, Math.PI * 2);
+        ctx.fillStyle = COL[color];
+        ctx.globalAlpha = 0.85;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+    });
+
+    // main track cells
+    TRACK.forEach(function (c) { rect(c[0], c[1], '#fff'); });
+
+    // home lanes
+    Object.keys(LANE).forEach(function (color) {
+      LANE[color].forEach(function (c) { rect(c[0], c[1], COL[color]); });
+    });
+
+    // start cells
+    Object.keys(START).forEach(function (color) {
+      var c = TRACK[START[color]];
+      rect(c[0], c[1], COL[color]);
+    });
+
+    // grid lines
+    TRACK.forEach(function (c) { outline(c[0], c[1]); });
+    Object.keys(LANE).forEach(function (color) {
+      LANE[color].forEach(function (c) { outline(c[0], c[1]); });
+    });
+
+    // safe stars
+    STARS.forEach(function (i) {
+      label('★', TRACK[i][0], TRACK[i][1], '#757575', 0.75);
+    });
+
+    // direction arrows
+    label('→', 0, 7, COL.red, 0.7);
+    label('↓', 7, 0, COL.green, 0.7);
+    label('←', 14, 7, COL.yellow, 0.7);
+    label('↑', 7, 14, COL.blue, 0.7);
+
+    // center triangles
+    function tri(x1, y1, x2, y2, x3, y3, color) {
+      ctx.beginPath();
+      ctx.moveTo(x1 * cell, y1 * cell);
+      ctx.lineTo(x2 * cell, y2 * cell);
+      ctx.lineTo(x3 * cell, y3 * cell);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+    tri(6, 6, 6, 9, 7.5, 7.5, COL.red);
+    tri(6, 6, 9, 6, 7.5, 7.5, COL.green);
+    tri(9, 6, 9, 9, 7.5, 7.5, COL.yellow);
+    tri(6, 9, 9, 9, 7.5, 7.5, COL.blue);
+
+    // tokens
+    if (game) {
+      game.players.forEach(function (pl) {
+        pl.tokens.forEach(function (p, n) {
+          var xy = tokenXY(pl.color, p, n);
+          drawToken(xy[0], xy[1], pl.color);
+        });
+      });
+    }
+  }
+
+  function startGame() {
+    var colors = COLORS_BY_COUNT[cfg.count];
+    var players = [];
+    for (var i = 0; i < colors.length; i++) {
+      var v = document.getElementById('pn' + i).value.trim() || ('Player ' + (i + 1));
+      players.push({
+        color: colors[i], name: v,
+        isAI: cfg.mode === 'computer' && i > 0,
+        tokens: [-1, -1, -1, -1]
+      });
+    }
+    game = { mode: cfg.mode, type: cfg.type, players: players };
+    openBoard();
+  }
+
+  function openBoard() {
+    show('board');
+    document.getElementById('boardTitle').textContent = modeText() + ' • ' + TYPE_NAMES[game.type];
+    var html = '';
+    game.players.forEach(function (p) {
+      html += '<div class="pchip"><span class="dot" style="background:' + COL[p.color] + '"></span>' +
+              p.name + (p.isAI ? ' 🤖' : '') + '</div>';
+    });
+    document.getElementById('strip').innerHTML = html;
+    setupBoard();
+    drawBoard();
+  }
+
+  function testPath() {
+    if (!game) return;
+    if (demo) { clearInterval(demo); demo = null; }
+    var pl = game.players[0];
+    var p = -1;
+    pl.tokens[0] = -1;
+    drawBoard();
+    demo = setInterval(function () {
+      p++;
+      if (p > 56) { clearInterval(demo); demo = null; return; }
+      pl.tokens[0] = p;
+      drawBoard();
+    }, 120);
+  }
+
+  function exitGame() {
+    if (demo) { clearInterval(demo); demo = null; }
+    game = null;
+    show('home');
+  }
+
+  /* ---------- start flow ---------- */
+  setTimeout(function () {
+    show('loading');
+    setTimeout(function () { document.getElementById('fill').style.width = '100%'; }, 50);
+  }, 2000);
+
+  setTimeout(function () {
+    var user = getUser();
+    if (user) { goHome(user); } else { show('login'); }
+  }, 4200);
+</script>
+<script src="game.js"></script>
+<script src="extras.js"></script>
+<script src="board8.js"></script>
+<script src="home.js"></script>
+</body>
+</html>
